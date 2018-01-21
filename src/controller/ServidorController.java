@@ -38,7 +38,6 @@ import util.Protocolo;
  */
 public class ServidorController extends UnicastRemoteObject implements ICompartilha{
 
-	private boolean isSuperno = false; // Identifica se o servidor é um supernó ou não
 	public HashMap<String, ArrayList<String>> mapaArquivos = new HashMap<String, ArrayList<String>>(); // Mapeia um nome de arquivo a endereços de peers 
 	public ArrayList<String> meusArquivos = new ArrayList<String>(); // Armazena os arquivos disponíveis pra download do próprio nó 
 	public String meuIP;
@@ -50,7 +49,7 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 	public MulticastSocket socketFolhas, socketSupernos; // Criar um grupo de multicast pra nós folha e outro pra supernós. 230.0.0.3 e 4, respectivamente
 	Scanner in = new Scanner(System.in);
 	DatagramSocket socketUDP;
-	public String SO;
+	public String SO; // Sistema Operacional do usuário
 	public static final int MAX_FOLHAS = 3; // Define o máximo de folhas que um supernó pode ter -1 (o próprio supernó)
 	
 	
@@ -95,7 +94,6 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 		}
 		else{
 			// Se não existem supernós disponíveis, vira supernó e cria o servidor de registros
-			this.isSuperno = true;
 			try {
 				socketSupernos = new MulticastSocket(44252);
 				socketSupernos.joinGroup(grupoSuper);
@@ -205,7 +203,6 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 		    			registrySuperno = enderecoRegistry;
 		    			System.out.println(enderecoRegistry);
 		    			is.close();
-		                System.out.println("Uhuu");
 		                break;
 		            }
 		            catch (SocketTimeoutException e) {
@@ -329,7 +326,6 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 		ArrayList<String> folhas = null;
 		ArrayList<String> nos = new ArrayList<String>();
 		
-		System.out.println("Ta entrando no método de deletar?");
 		
 		if(this.mapaArquivos.containsKey(nomeDoArquivo)){
 			folhas = mapaArquivos.get(nomeDoArquivo);
@@ -411,26 +407,26 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 				
 				 while(true){     
 			            try {
-			                socketUDP.receive(pacoteRecebido);
-
-			                byte[] dados = pacoteRecebido.getData();
-			    		    
-			    		  	ByteArrayInputStream in = new ByteArrayInputStream(dados);
-			    		  	ObjectInputStream is = null;
-			    		  	
-			    			try {
-			    			 	 is = new ObjectInputStream(in);
-			    			} catch (IOException e1) {
-			    				e1.printStackTrace();
-			    			}
-			    			if(is.readInt() == Protocolo.ARQUIVO_ENCONTRADO){
-			    				enderecos = (ArrayList<String>) is.readObject();
-			    				 
-					   				 Registry registro = null;
-					   				 
-					   				 if(!enderecos.equals(null) && !enderecos.isEmpty())
-					   				 for(String end : enderecos){
-		
+				                socketUDP.receive(pacoteRecebido);
+	
+				                byte[] dados = pacoteRecebido.getData();
+				    		    
+				    		  	ByteArrayInputStream in = new ByteArrayInputStream(dados);
+				    		  	ObjectInputStream is = null;
+				    		  	
+				    			try {
+				    			 	 is = new ObjectInputStream(in);
+				    			} catch (IOException e1) {
+				    				e1.printStackTrace();
+				    			}
+				    			if(is.readInt() == Protocolo.ARQUIVO_ENCONTRADO){
+				    				enderecos = (ArrayList<String>) is.readObject();
+				    				 
+						   				 Registry registro = null;
+						   				 
+						   				 if(!enderecos.equals(null) && !enderecos.isEmpty())
+						   				 for(String end : enderecos){
+			
 					   							String endNo[] = end.split(";");
 					   							String[] endFolha = endNo[1].split(":");
 					   							String[] endReg = endNo[0].split(":");
@@ -447,10 +443,10 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 					   							} catch (RemoteException | NotBoundException e) {
 					   								e.printStackTrace();
 					   							}
-					   				 }
+					   				 	}
 					    			}
 			    					return true;
-			            }
+			            		}
 			            catch (SocketTimeoutException e) {
 			            	System.out.println("Arquivo Não Encontrado!");
 			            	break;
@@ -544,13 +540,6 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 	}
 	
 	
-	public boolean isSuperno() {
-		return isSuperno;
-	}
-
-	public void setSuperno(boolean isSuperno) {
-		this.isSuperno = isSuperno;
-	}
 
 	/**
 	 * Deleta um arquivo específico da pasta de arquivos disponíveis pra upload 
@@ -576,10 +565,18 @@ public class ServidorController extends UnicastRemoteObject implements IComparti
 		return false;
 	}
 	
+	/**
+	 * Checa se o sistema operacional sendo utilizado é unix
+	 * @return
+	 */
 	public boolean isUnix(){
 			return (SO.indexOf("nix") >= 0 || SO.indexOf("nux") >= 0 || SO.indexOf("aix") > 0 );
 	}
 	
+	/**
+	 * Checa se o sistema operacional sendo utilizado é windows
+	 * @return
+	 */
 	public boolean isWindows(){
 		return (SO.indexOf("win") >= 0);
 	}
